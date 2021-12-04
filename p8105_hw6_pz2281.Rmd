@@ -94,7 +94,7 @@ broom::glance(my_fit) %>% knitr::kable()
 broom::tidy(my_fit) %>% knitr::kable()
 ```
 
-However, I also want to use the step-wise model selection method(bi-directional) to fit a model and compare it with my hypothesized model. The one that has higher adjusted R^2 value would be selected as the hypothesized model.
+However, I also want to use the step-wise model selection method(bi-directional) to fit a model and compare it with my hypothesized model. The one that has higher adjusted $r^2$ value would be selected as the hypothesized model.
 
 Step-wise model selection:
 ```{r}
@@ -105,7 +105,7 @@ broom::glance(fit_stepwise) %>% knitr::kable()
 broom::tidy(fit_stepwise) %>% knitr::kable()
 ```
 
-As shown in the table, the model fitted using step-wise selection has higher R^2 values. So the model I would use as hypothesized model is fit_stepwise.
+As shown in the table, the model fitted using step-wise selection has higher $r^2$ value. So the model I would use as hypothesized model is fit_stepwise.
 
 Plot of model residuals against fitted values:
 ```{r}
@@ -166,7 +166,7 @@ cv_df %>%
   mutate(model = fct_inorder(model)) %>% 
   ggplot(aes(x = model, y = rmse)) + geom_violin() +
   labs(
-    title = "Root-Mean-Squared-Deviation Distributions of Three Models"
+    title = "Root-Mean-Square-Error Distributions of Three Models"
   )
 ```
 
@@ -189,4 +189,95 @@ cv_df %>%
 
 Now, it is obvious that the average rmse is lowest for the hypothesized model(fit_stepwise). This model performs best comparing to the other two models.
 
+## Problem 2
+
+Importing the data
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+Bootstrapping the data:
+
+```{r}
+bs_weather = weather_df %>% 
+  bootstrap(n = 5000) %>% 
+  mutate(fit = map(strap, ~lm(tmax ~ tmin, data = .x))) %>% 
+  mutate(results = map(fit, broom::tidy)) %>% 
+  mutate(results_2 = map(fit, broom::glance))
+```
+
+Making density plots and obtaining 95% confidence intervals for $\hat{r}^2$ and $log(\hat{\beta_0}*\hat{\beta_1})$.
+```{r}
+#Density plot for R^2 values
+bs_weather %>% 
+  unnest(results_2) %>% 
+  select(r.squared) %>% 
+  ggplot(aes(x = r.squared)) + 
+  geom_density() +
+  labs(
+    title = "Distribution of R-sqaured values",
+    x = "Estimated R-sqaured"
+  )
+```
+
+Under repeated sampling of the weather data, the distribution of estimated $R^2$ values of the fitted model is approximately normal and centered around 0.91.
+
+95% confidence interval of estimated $R^2$:
+```{r}
+#Obtaining 95% confidence interval for R^2 estimates
+bs_weather %>% 
+  unnest(results_2) %>% 
+  select(r.squared) %>% 
+  summarise(
+    ci_lower = quantile(r.squared, 0.025),
+    ci_higher = quantile(r.squared, 0.975)
+  ) %>% knitr::kable()
+```
+
+Distribution of $log(\hat{\beta_0}*\hat{\beta_1})$:
+```{r}
+beta_bs_weather = bs_weather %>%   
+  select(-strap, -fit, -results_2) %>% 
+  unnest(results) %>% 
+  select(.id, term, estimate) %>% 
+  pivot_wider(
+    names_from = term, 
+    values_from = estimate
+  ) %>% 
+  rename(
+    id = .id, beta_0 = `(Intercept)`, beta_1 = tmin
+  ) %>% 
+  mutate(log_multiples = log(beta_0*beta_1))
+
+#density plot for log(beta_0 * beta_1)
+beta_bs_weather %>% 
+  ggplot(aes(x = log_multiples)) +
+  geom_density() +
+  labs(
+    title = "Distribution of log(beta_0*beta_1)",
+    x = "Estimated log(beta_0*beta_1)"
+  )
+```
+
+Under repeated sampling, the value of estimated $log(\hat{\beta_0}*\hat{\beta_1})$ is centered around 2 to 2.025. And there is a slightly longer tail on the left, indicating having lower estimated values occasionally.
+
+95% confidence interval for $log(\hat{\beta_0}*\hat{\beta_1})$:
+```{r}
+beta_bs_weather %>% 
+  summarise(
+    ci_lower = quantile(log_multiples, 0.025),
+    ci_higher = quantile(log_multiples, 0.975)
+  ) %>% knitr::kable()
+```
 
