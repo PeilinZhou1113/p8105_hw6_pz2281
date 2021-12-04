@@ -94,9 +94,9 @@ broom::glance(my_fit) %>% knitr::kable()
 broom::tidy(my_fit) %>% knitr::kable()
 ```
 
-However, I also want to use the step-wise model selection method(bi-directional) to fit a model and compare it with my hypothesized model. The one that has higher adjusted R^2 value would be selected as hypothesized model.
+However, I also want to use the step-wise model selection method(bi-directional) to fit a model and compare it with my hypothesized model. The one that has higher adjusted R^2 value would be selected as the hypothesized model.
 
-stepwise model slection:
+Step-wise model selection:
 ```{r}
 fit_intercept = lm(bwt ~ 1, data = clean_birth)
 fit_all = lm(bwt ~ ., data = clean_birth)
@@ -123,5 +123,70 @@ clean_birth %>%
 
 Most of the points are symmetrically distributed and clustered around 0 on the y-axis. However, we can see that when the predicted values are small, the residuals tend to have extreme values.
 
+Next, compare fit_stepwise model with two prespecified models:
+
+Fit two models:
+
+```{r}
+fit_linear = lm(bwt ~ blength + gaweeks, data = clean_birth)
+broom::tidy(fit_linear) %>% knitr::kable()
+broom::glance(fit_linear) %>% knitr::kable()
+
+fit_interaction = lm(bwt ~ bhead * blength + bhead * babysex + blength * babysex + bhead * babysex * blength, data = clean_birth)
+broom::tidy(fit_interaction) %>% knitr::kable()
+broom::glance(fit_interaction) %>% knitr::kable()
+```
+
+Compare the models and plot the RMSE distributions:
+```{r}
+set.seed(1)
+cv_df = crossv_mc(clean_birth,100) %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble)
+  ) %>% 
+  mutate(
+    fit_stepwise = map(train, ~lm(bwt ~ bhead + blength + gaweeks + wtgain + frace + mrace, data = .x)),
+    fit_linear = map(train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+    fit_interaction = map(train, ~lm(bwt ~ bhead * blength + bhead * babysex + blength * babysex + bhead * babysex * blength, data = .x))
+  ) %>% 
+  mutate(
+    rmse_fit_stepwise = map2_dbl(fit_stepwise, test, ~rmse(model = .x, data = .y)),
+    rmse_fit_linear    = map2_dbl(fit_linear, test, ~rmse(model = .x, data = .y)),
+    rmse_fit_interaction    = map2_dbl(fit_interaction, test, ~rmse(model = .x, data = .y)),
+  )
+
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  ggplot(aes(x = model, y = rmse)) + geom_violin() +
+  labs(
+    title = "Root-Mean-Squared-Deviation Distributions of Three Models"
+  )
+```
+
+Based on the distributions of RMSE values from the three models, we can clearly see that the model with the fewest predictors, in other words, the fit_linear model performs the worst. And the hypothesized model, fit_stepwise, performs better than the one with interactions, but there is some overlap between the two distributions of rmse of these two models. So, it might be better to compute the average rmse to have clearer picture:
+
+```{r}
+cv_df %>% 
+  select(starts_with("rmse")) %>% 
+  pivot_longer(
+    everything(),
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_") %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  group_by(model) %>% 
+  summarise(
+    avg_rmse = mean(rmse)
+  ) %>% knitr::kable()
+```
+
+Now, it is obvious that the average rmse is lowest for the hypothesized model(fit_stepwise). This model performs best comparing to the other two models.
 
 
