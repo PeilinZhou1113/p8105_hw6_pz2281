@@ -80,3 +80,18 @@ clean_birth %>%
   )
 ```
 
+From the scatter plots, there is no clear relationship between birth weight and other categorical variables, but a visually noticeable difference in birth weight does exists based on father/mother's race, or the presence of malformations.
+
+Based on the above observations, my hypothesized model contains 5 numeric variables and 2 categorical variables which have shown potential relationship with birth weight.
+
+Hypothesized Model:
+
+bwt = bhead + blength + delwt + gaweeks + wtgain + frace + mrace
+
+```{r}
+my_fit = lm(bwt ~ bhead + blength + gaweeks + wtgain + frace + mrace, data = clean_birth)
+broom::glance(my_fit) %>% knitr::kable()
+broom::tidy(my_fit) %>% knitr::kable()
+```
+
+
