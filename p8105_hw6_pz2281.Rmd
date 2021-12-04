@@ -35,7 +35,7 @@ birth_data %>%
 #clean the data
 
 clean_birth = birth_data %>% 
-  mutate_at(c("babysex", "frace", "malform", "mrace", "fincome"), as.factor) %>% 
+  mutate_at(c("babysex", "frace", "malform", "mrace"), as.factor) %>% 
   mutate_if(is.integer, as.double) 
 #  rename(baby_sex = babysex, baby_head = bhead, baby_length = blength, baby_weight = bweight, m_del)
 
