@@ -1,7 +1,9 @@
 ---
 title: "p8105_hw6_pz2281"
 author: "Peilin Zhou"
-output: github_document
+output: 
+  github_document:
+    pandoc_args: "--webtex"
 ---
 
 ```{r message = FALSE}
@@ -86,7 +88,7 @@ Based on the above observations, my hypothesized model contains 5 numeric variab
 
 Hypothesized Model:
 
-bwt = bhead + blength + delwt + gaweeks + wtgain + frace + mrace
+birth weight = baby’s head circumference at birth + baby’s length at birth + mother’s weight at delivery + gestational age in weeks + mother’s weight gain during pregnancy + father’s race + mother's race
 
 ```{r}
 my_fit = lm(bwt ~ bhead + blength + gaweeks + wtgain + frace + mrace, data = clean_birth)
@@ -104,6 +106,10 @@ fit_stepwise = step(fit_intercept, direction = 'both', scope = formula(fit_all),
 broom::glance(fit_stepwise) %>% knitr::kable()
 broom::tidy(fit_stepwise) %>% knitr::kable()
 ```
+
+Fitted model:
+
+birth weight = baby’s head circumference at birth + baby’s length at birth + mother’s weight at delivery + gestational age in weeks + mother's race + average number of cigarettes smoked per day during pregnancy + mother’s pre-pregnancy BMI + baby's sex + number of live births prior to this pregnancy + mother’s pre-pregnancy weight + family monthly income
 
 As shown in the table, the model fitted using step-wise selection has higher $r^2$ value. So the model I would use as hypothesized model is fit_stepwise.
 
@@ -217,7 +223,7 @@ bs_weather = weather_df %>%
   mutate(results_2 = map(fit, broom::glance))
 ```
 
-Making density plots and obtaining 95% confidence intervals for $\hat{r}^2$ and estimated log(beta_0 * beta_1).
+Making density plots and obtaining 95% confidence intervals for $\hat{r}^2$ and $log(\hat{\beta_0} * \hat{\beta_1})$.
 ```{r}
 #Density plot for R^2 values
 bs_weather %>% 
@@ -245,7 +251,7 @@ bs_weather %>%
   ) %>% knitr::kable()
 ```
 
-Distribution of estimated log(beta_0 * beta_1):
+Distribution of $log(\hat{\beta_0} * \hat{\beta_1})$:
 ```{r}
 beta_bs_weather = bs_weather %>%   
   select(-strap, -fit, -results_2) %>% 
@@ -270,9 +276,9 @@ beta_bs_weather %>%
   )
 ```
 
-Under repeated sampling, the value of estimated log(beta_0 * beta_1) is centered around 2 to 2.025. And there is a slightly longer tail on the left, indicating having lower estimated values occasionally.
+Under repeated sampling, the value of $log(\hat{\beta_0} * \hat{\beta_1})$ is centered around 2 to 2.025. And there is a slightly longer tail on the left, indicating having lower estimated values occasionally.
 
-95% confidence interval for estimated log(beta_0 * beta_1):
+95% confidence interval for $log(\hat{\beta_0} * \hat{\beta_1})$:
 ```{r}
 beta_bs_weather %>% 
   summarise(
