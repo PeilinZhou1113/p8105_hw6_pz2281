@@ -26,6 +26,8 @@ Clean the data. First check if there are missing values.
 birth_data %>% 
   summarise_all(~ sum(is.na(.)))
 #no missing values
+
+
 birth_data %>% 
   select(babysex, frace, mrace, malform) %>% 
   summarise_all(list(~n_distinct(.)))
@@ -33,9 +35,28 @@ birth_data %>%
 #clean the data
 
 clean_birth = birth_data %>% 
-  mutate_at(c("babysex", "frace", "malform", "mrace"), as.factor) %>% 
+  mutate_at(c("babysex", "frace", "malform", "mrace", "fincome"), as.factor) %>% 
   mutate_if(is.integer, as.double) 
 #  rename(baby_sex = babysex, baby_head = bhead, baby_length = blength, baby_weight = bweight, m_del)
 
+```
+
+To select independent variables for the model, I used scatter plots to observe the potential association between birth weight and other variables.
+
+Plots for birth weight against numerical variables:
+```{r}
+clean_birth %>%
+  select_if(is.numeric) %>% 
+  gather(-bwt, key = "var", value = "value") %>% 
+  ggplot(aes(x = value, y = bwt)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE) +
+    facet_wrap(~ var, scales = "free") +
+    theme_bw() +
+    labs(
+    title = "Scatter Plots of Birth Weight Against Other Numeric Variables",
+    x = "Numeric Variables",
+    y = "Birth Weight"
+    )
 ```
 
