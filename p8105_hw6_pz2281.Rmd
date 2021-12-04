@@ -94,4 +94,34 @@ broom::glance(my_fit) %>% knitr::kable()
 broom::tidy(my_fit) %>% knitr::kable()
 ```
 
+However, I also want to use the step-wise model selection method(bi-directional) to fit a model and compare it with my hypothesized model. The one that has higher adjusted R^2 value would be selected as hypothesized model.
+
+stepwise model slection:
+```{r}
+fit_intercept = lm(bwt ~ 1, data = clean_birth)
+fit_all = lm(bwt ~ ., data = clean_birth)
+fit_stepwise = step(fit_intercept, direction = 'both', scope = formula(fit_all), trace = 0)
+broom::glance(fit_stepwise) %>% knitr::kable()
+broom::tidy(fit_stepwise) %>% knitr::kable()
+```
+
+As shown in the table, the model fitted using step-wise selection has higher R^2 values. So the model I would use as hypothesized model is fit_stepwise.
+
+Plot of model residuals against fitted values:
+```{r}
+clean_birth %>% 
+  modelr::add_residuals(fit_stepwise) %>% 
+  modelr::add_predictions(fit_stepwise) %>% 
+  ggplot(aes(x = pred, y = resid)) +
+  geom_point() +
+  labs(
+    title = "Fitted Values vs Residuals of the Model",
+    y = "Residuals",
+    x = "Predicted Values"
+  )
+```
+
+Most of the points are symmetrically distributed and clustered around 0 on the y-axis. However, we can see that when the predicted values are small, the residuals tend to have extreme values.
+
+
 
