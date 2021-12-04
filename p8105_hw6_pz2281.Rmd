@@ -60,3 +60,23 @@ clean_birth %>%
     )
 ```
 
+From the plots, it can be observed that positive associations potentially exist  between birth weight and baby’s head circumference at birth, baby’s length at birth, gestational age in weeks, mother’s height gain during pregnancy. These variables can be selected as predictors of the model.
+
+Plots for birth weight against categorical variables.
+
+```{r}
+clean_birth %>%
+  select_at(c("bwt", "babysex", "frace", "malform", "mrace")) %>% 
+  gather(-bwt, key = "var", value = "value") %>% 
+  ggplot(aes(x = value, y = bwt)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE) +
+    facet_wrap(~ var, scales = "free") +
+    theme_bw() +
+  labs(
+    title = "Scatter Plots of Birth Weight Against Other Categorical Variables",
+    x = "Categorical Variables",
+    y = "Birth Weight"
+  )
+```
+
