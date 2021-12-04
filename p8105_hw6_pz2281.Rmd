@@ -1,10 +1,41 @@
 ---
 title: "p8105_hw6_pz2281"
 author: "Peilin Zhou"
-output: git_document
+output: github_document
 ---
 
 ```{r message = FALSE}
 library(tidyverse)
+library(modelr)
+library(mgcv)
+library(ggplot2)
+```
+
+## Problem 1
+
+Import data for modelling
+
+```{r}
+birth_data = read.csv("./data/birthweight.csv") %>%
+  as_tibble()
+```
+
+Clean the data. First check if there are missing values.
+
+```{r}
+birth_data %>% 
+  summarise_all(~ sum(is.na(.)))
+#no missing values
+birth_data %>% 
+  select(babysex, frace, mrace, malform) %>% 
+  summarise_all(list(~n_distinct(.)))
+
+#clean the data
+
+clean_birth = birth_data %>% 
+  mutate_at(c("babysex", "frace", "malform", "mrace"), as.factor) %>% 
+  mutate_if(is.integer, as.double) 
+#  rename(baby_sex = babysex, baby_head = bhead, baby_length = blength, baby_weight = bweight, m_del)
+
 ```
 
